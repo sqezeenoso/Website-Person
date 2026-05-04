@@ -19,15 +19,15 @@
 
         body {
             margin: 0;
-            min-height: 100vh; /* Biar bisa memanjang kalau layar sempit */
+            min-height: 100vh;
             display: flex;
-            flex-direction: column; /* Susun card dan footer secara vertikal */
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             font-family: -apple-system, system-ui, sans-serif;
             background-color: var(--bg-color);
             transition: background 0.8s ease;
-            padding: 20px 0; /* Kasih jarak atas bawah buat mobile */
+            padding: 50px 0; /* Memberi ruang agar tidak menempel atas-bawah browser */
         }
 
         #bg-overlay {
@@ -40,6 +40,7 @@
             transition: background-image 0.8s ease;
         }
 
+        /* Tombol Add Music - Posisi tetap tapi ukuran pas */
         #upload-container {
             position: absolute;
             top: 20px;
@@ -50,7 +51,7 @@
         .custom-file-upload {
             background: rgba(255, 255, 255, 0.15);
             color: white;
-            padding: 10px 18px;
+            padding: 10px 16px;
             border-radius: 12px;
             cursor: pointer;
             font-size: 13px;
@@ -60,9 +61,10 @@
 
         #file-input { display: none; }
 
+        /* KARTU DIKECILKAN LEBARNYA */
         .player-card {
-            width: 90%; /* Responsif di HP */
-            max-width: 360px; /* Lebar maksimal di Desktop */
+            width: 82%; /* Lebar kotak yang dikecilkan agar tidak nabrak pinggir layar */
+            max-width: 330px; /* Batas maksimal lebar kotak */
             background: rgba(30, 30, 30, 0.6);
             backdrop-filter: blur(30px);
             border-radius: 40px;
@@ -72,6 +74,7 @@
             text-align: left;
         }
 
+        /* ELEMEN DI DALAM TETAP BESAR (UI AWAL) */
         .cover-art {
             width: 100%;
             aspect-ratio: 1/1;
@@ -108,7 +111,6 @@
             height: 12px;
             background: #fff;
             border-radius: 50%;
-            box-shadow: 0 0 5px rgba(0,0,0,0.5);
         }
 
         .time-box {
@@ -117,7 +119,6 @@
             font-size: 11px;
             color: var(--text-sec);
             margin-top: 10px;
-            font-variant-numeric: tabular-nums;
         }
 
         .main-controls {
@@ -133,15 +134,11 @@
             border: none;
             color: white;
             cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             transition: 0.2s;
         }
 
         .btn-side { font-size: 32px; width: 40px; }
         .btn-play { font-size: 55px; width: 60px; }
-        .btn-ctrl:active { transform: scale(0.9); opacity: 0.7; }
 
         .volume-box {
             display: flex;
@@ -152,24 +149,19 @@
         .volume-box i { color: var(--text-sec); font-size: 12px; }
         .v-slider { flex: 1; height: 4px; }
 
-        /* Footer Credit - Sekarang mengikuti alur halaman agar tidak nabrak */
         .footer-credit {
-            margin-top: 30px;
+            margin-top: 35px;
             font-size: 11px;
             color: rgba(255, 255, 255, 0.4);
             letter-spacing: 1.5px;
             text-align: center;
             width: 100%;
-            font-weight: 500;
         }
 
-        /* Penyesuaian untuk layar yang sangat pendek (HP model lama/kecil) */
-        @media (max-height: 750px) {
-            .player-card { padding: 20px; }
-            .cover-art { margin-bottom: 15px; }
-            .main-controls { margin: 15px 0 25px 0; }
-            #song-title { font-size: 20px; }
-            #artist-name { font-size: 16px; }
+        /* Khusus layar sangat kecil */
+        @media (max-width: 360px) {
+            .player-card { width: 88%; padding: 20px; }
+            #song-title { font-size: 22px; }
         }
     </style>
 </head>
@@ -239,16 +231,13 @@
         document.getElementById('file-input').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if(!file) return;
-
             const url = URL.createObjectURL(file);
             audio.src = url;
-
             jsmediatags.read(file, {
                 onSuccess: function(tag) {
                     const t = tag.tags;
                     document.getElementById('song-title').innerText = t.title || file.name;
                     document.getElementById('artist-name').innerText = t.artist || "Unknown Artist";
-                    
                     if(t.picture) {
                         const { data, format } = t.picture;
                         let base64 = "";
@@ -277,8 +266,6 @@
             if(!isNaN(audio.duration)) {
                 const perc = (audio.currentTime / audio.duration) * 100;
                 progBar.value = perc;
-                progBar.max = 100;
-
                 document.getElementById('curr-time').innerText = formatTime(audio.currentTime);
                 document.getElementById('total-time').innerText = "-" + formatTime(audio.duration - audio.currentTime);
             }
