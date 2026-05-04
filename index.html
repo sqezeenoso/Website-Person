@@ -19,14 +19,15 @@
 
         body {
             margin: 0;
-            height: 100vh;
+            min-height: 100vh; /* Biar bisa memanjang kalau layar sempit */
             display: flex;
+            flex-direction: column; /* Susun card dan footer secara vertikal */
             justify-content: center;
             align-items: center;
             font-family: -apple-system, system-ui, sans-serif;
-            overflow: hidden;
             background-color: var(--bg-color);
             transition: background 0.8s ease;
+            padding: 20px 0; /* Kasih jarak atas bawah buat mobile */
         }
 
         #bg-overlay {
@@ -60,7 +61,8 @@
         #file-input { display: none; }
 
         .player-card {
-            width: 360px;
+            width: 90%; /* Responsif di HP */
+            max-width: 360px; /* Lebar maksimal di Desktop */
             background: rgba(30, 30, 30, 0.6);
             backdrop-filter: blur(30px);
             border-radius: 40px;
@@ -150,19 +152,24 @@
         .volume-box i { color: var(--text-sec); font-size: 12px; }
         .v-slider { flex: 1; height: 4px; }
 
-        /* Footer Credit - Dikunci di paling bawah layar */
+        /* Footer Credit - Sekarang mengikuti alur halaman agar tidak nabrak */
         .footer-credit {
-            position: fixed;
-            bottom: 20px; /* Jarak dari bawah layar */
-            left: 50%;
-            transform: translateX(-50%);
+            margin-top: 30px;
             font-size: 11px;
             color: rgba(255, 255, 255, 0.4);
             letter-spacing: 1.5px;
             text-align: center;
             width: 100%;
             font-weight: 500;
-            z-index: 10;
+        }
+
+        /* Penyesuaian untuk layar yang sangat pendek (HP model lama/kecil) */
+        @media (max-height: 750px) {
+            .player-card { padding: 20px; }
+            .cover-art { margin-bottom: 15px; }
+            .main-controls { margin: 15px 0 25px 0; }
+            #song-title { font-size: 20px; }
+            #artist-name { font-size: 16px; }
         }
     </style>
 </head>
@@ -210,7 +217,6 @@
         </div>
     </div>
 
-    <!-- Posisinya sekarang fixed di bawah layar -->
     <div class="footer-credit">
         © 2026 Sqezee Noso | Music Player
     </div>
