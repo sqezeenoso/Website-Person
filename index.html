@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>iPhone Music Player - Fade Saat Scroll</title>
 <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -22,13 +22,18 @@
     --btn-hover: rgba(255,255,255,0.2);
     --shadow: 0 40px 80px rgba(0,0,0,0.6);
 
-    /* pengaturan judul scroll */
-    --title-fade-width: 50px; /* lebar fade di sisi kiri dan kanan */
-    --title-fade-color: rgba(28,28,40,0.75); /* warna fade transparan untuk blend dengan latar player */
+    --title-fade-width: 50px;
+    --title-fade-color: rgba(28,28,40,0.75);
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
   }
 
   body {
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -92,10 +97,13 @@
     align-items: center;
     gap: 0;
     position: relative;
+    width: 100%;
+    padding: 0 16px;
   }
 
   .player {
-    width: 370px;
+    width: 100%;
+    max-width: 370px;
     background: rgba(28, 28, 40, 0.92);
     backdrop-filter: blur(40px);
     -webkit-backdrop-filter: blur(40px);
@@ -219,7 +227,6 @@
     width: 100%;
     overflow: hidden;
     position: relative;
-    /* DEFAULT: Hanya pudar di kanan pas diam */
     -webkit-mask-image: linear-gradient(to right, 
       black 0%, 
       black 90%, 
@@ -257,8 +264,6 @@
   }
 
   .song-scrolling-anim {
-    /* Total durasi 12 detik (termasuk jeda) */
-    animation: scroll 10s linear infinite;
     animation: scrollWithPause 12s linear infinite;
   }
 
@@ -277,17 +282,11 @@
     text-overflow: ellipsis;
   }
 
-  /* Animasi scroll ke kiri - akan diaktifkan via JS dengan class */
   @keyframes scrollTextLeft {
-    0% {
-      transform: translateX(0);
-    }
-    100% {
-      transform: translateX(var(--scroll-dist, -100px));
-    }
+    0% { transform: translateX(0); }
+    100% { transform: translateX(var(--scroll-dist, -100px)); }
   }
 
-  /* Class untuk animasi scroll (bergerak ke kiri terus) */
   .song-name.song-scrolling {
     animation: scrollTextLeft 10s linear infinite;
     will-change: transform;
@@ -486,6 +485,22 @@
     font-weight: 400;
     padding: 8px 0;
   }
+
+  /* Responsive: kalau layar kecil, kurangi padding agar muat */
+  @media (max-height: 750px) {
+    .artwork-section { padding: 16px 24px 14px; }
+    .song-info { margin-bottom: 12px; }
+    .controls { margin-bottom: 14px; }
+    .extras { padding: 10px 28px 0; }
+    .play-btn { width: 60px; height: 60px; }
+    .song-name { font-size: 19px; }
+  }
+
+  @media (max-height: 620px) {
+    .artwork-section { padding: 10px 20px 10px; }
+    .song-name { font-size: 17px; }
+    .player { border-radius: 32px; }
+  }
 </style>
 </head>
 <body>
@@ -614,8 +629,6 @@
   </div>
 </div>
 
-
-
 <audio id="audioPlayer"></audio>
 
 <script>
@@ -638,136 +651,83 @@
   let isShuffle = false;
   let isRepeat = false;
   
-  let scrollTimeout = null; // untuk jeda sebelum scroll mulai
+  let scrollTimeout = null;
   let isScrollingActive = false;
 
-  // Fungsi untuk memulai scroll dengan jeda 2 detik + fade
   function startScrollWithDelay() {
-    // Hapus animasi dan fade yang sedang berjalan
     stopScrollAndFade();
-    
     const container = songTextContainer;
     const visibleWidth = container.clientWidth;
     const textWidth = songNameEl.scrollWidth;
-    
-    // Jika teks tidak overflow, tidak perlu scroll
-    if (textWidth <= visibleWidth + 4) {
-      return;
-    }
-    
-    // Hitung jarak scroll yang diperlukan
-    const dist = textWidth - visibleWidth + 20; // +20 biar benar-benar keliatan full
+    if (textWidth <= visibleWidth + 4) return;
+    const dist = textWidth - visibleWidth + 20;
     songNameEl.style.setProperty('--scroll-dist', `-${dist}px`);
-    
-    // Jeda 2 detik, baru mulai scroll + fade
     scrollTimeout = setTimeout(() => {
-      // Aktifkan class animasi pada judul
       songNameEl.classList.add('song-scrolling');
-      // Aktifkan fade pada container (muncul gradient kiri kanan)
       songTextContainer.classList.add('fade-active');
       isScrollingActive = true;
-    }, 2000); // 2 detik jeda
+    }, 2000);
   }
   
-  // Fungsi untuk menghentikan scroll dan fade
   function stopScrollAndFade() {
-    if (scrollTimeout) {
-      clearTimeout(scrollTimeout);
-      scrollTimeout = null;
-    }
-    // Hapus class animasi dan fade
+    if (scrollTimeout) { clearTimeout(scrollTimeout); scrollTimeout = null; }
     songNameEl.classList.remove('song-scrolling');
     songTextContainer.classList.remove('fade-active');
     isScrollingActive = false;
-    // Reset posisi translateX ke 0 (biar posisi awal lagi)
     songNameEl.style.transform = 'translateX(0)';
-    // Force reflow biar animasi reset
     void songNameEl.offsetHeight;
   }
   
-  // Fungsi untuk mereset dan memulai ulang scroll (dipanggil saat judul berubah)
   function resetAndStartScroll() {
     stopScrollAndFade();
     startScrollWithDelay();
   }
   
-  // Observasi perubahan ukuran container (resize window)
   function handleResize() {
     if (isScrollingActive) {
-      // Jika sedang scroll, stop dulu lalu mulai ulang dengan delay
       resetAndStartScroll();
     } else {
-      // Jika tidak sedang scroll, cek apakah perlu scroll
-      const container = songTextContainer;
-      const visibleWidth = container.clientWidth;
+      const visibleWidth = songTextContainer.clientWidth;
       const textWidth = songNameEl.scrollWidth;
-      if (textWidth > visibleWidth + 4) {
-        resetAndStartScroll();
-      } else {
-        stopScrollAndFade();
-      }
+      if (textWidth > visibleWidth + 4) resetAndStartScroll();
+      else stopScrollAndFade();
     }
   }
   
-  // Event listener untuk resize
-  window.addEventListener('resize', () => {
-    setTimeout(handleResize, 100);
-  });
+  window.addEventListener('resize', () => { setTimeout(handleResize, 100); });
   
-  // Fungsi untuk mengecek overflow dan mulai scroll (dengan jeda)
   function checkTextOverflowAndScroll() {
     const container = songTextContainer;
     if (!container) return;
     const visibleWidth = container.clientWidth;
     const textWidth = songNameEl.scrollWidth;
-    
-    if (textWidth > visibleWidth + 4) {
-      resetAndStartScroll();
-    } else {
-      stopScrollAndFade();
-    }
+    if (textWidth > visibleWidth + 4) resetAndStartScroll();
+    else stopScrollAndFade();
   }
 
-  // File input handler
   fileInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     const url = URL.createObjectURL(file);
     audio.src = url;
-
-    // Extract filename as song name
     let name = file.name.replace(/\.[^/.]+$/, '');
     let artist = 'Unknown Artist';
-
-    // Try to parse "Artist - Title" format
     if (name.includes(' - ')) {
       const parts = name.split(' - ');
       artist = parts[0].trim();
       name = parts.slice(1).join(' - ').trim();
     }
-
     songNameEl.textContent = name;
     songArtistEl.textContent = artist;
-
-    // Reset scroll state sebelum mengecek ulang
     stopScrollAndFade();
-    
-    // Try to extract cover art via ID3 tags (using jsmediatags if available)
     await extractCoverArt(file);
-
     audio.load();
     audio.play();
     updatePlayIcon(true);
     artworkContainer.classList.add('playing');
-    
-    // Setelah metadata cover dan teks selesai, cek overflow
-    setTimeout(() => {
-      checkTextOverflowAndScroll();
-    }, 50);
+    setTimeout(() => { checkTextOverflowAndScroll(); }, 50);
   });
 
-  // Cover art extraction
   async function extractCoverArt(file) {
     return new Promise((resolve) => {
       if (window.jsmediatags) {
@@ -788,12 +748,7 @@
         const picture = tag.tags.picture;
         if (tag.tags.title) songNameEl.textContent = tag.tags.title;
         if (tag.tags.artist) songArtistEl.textContent = tag.tags.artist;
-        
-        // Setelah teks diperbarui, cek overflow dan scroll
-        setTimeout(() => {
-          checkTextOverflowAndScroll();
-        }, 50);
-
+        setTimeout(() => { checkTextOverflowAndScroll(); }, 50);
         if (picture) {
           const arr = new Uint8Array(picture.data);
           const blob = new Blob([arr], { type: picture.format });
@@ -816,7 +771,6 @@
     artworkPlaceholder.style.display = 'flex';
   }
 
-  // Play / pause
   function togglePlay() {
     if (!audio.src) return;
     if (audio.paused) {
@@ -842,20 +796,15 @@
     }
   }
 
-  // Skip
   function skipBack() {
-    if (audio.currentTime > 3) {
-      audio.currentTime = 0;
-    } else {
-      audio.currentTime = Math.max(0, audio.currentTime - 15);
-    }
+    if (audio.currentTime > 3) audio.currentTime = 0;
+    else audio.currentTime = Math.max(0, audio.currentTime - 15);
   }
 
   function skipForward() {
     audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 15);
   }
 
-  // Progress
   audio.addEventListener('timeupdate', () => {
     if (!audio.duration) return;
     const pct = (audio.currentTime / audio.duration) * 100;
@@ -870,13 +819,8 @@
   });
 
   audio.addEventListener('ended', () => {
-    if (isRepeat) {
-      audio.currentTime = 0;
-      audio.play();
-    } else {
-      updatePlayIcon(false);
-      artworkContainer.classList.remove('playing');
-    }
+    if (isRepeat) { audio.currentTime = 0; audio.play(); }
+    else { updatePlayIcon(false); artworkContainer.classList.remove('playing'); }
   });
 
   function seekTo(e) {
@@ -886,7 +830,6 @@
     audio.currentTime = pct * audio.duration;
   }
 
-  // Volume
   audio.volume = 0.7;
 
   function setVolume(e) {
@@ -896,19 +839,16 @@
     volumeFill.style.width = (pct * 100) + '%';
   }
 
-  // Like
   function toggleLike() {
     isLiked = !isLiked;
     document.getElementById('heartBtn').classList.toggle('liked', isLiked);
   }
 
-  // Shuffle
   function toggleShuffle() {
     isShuffle = !isShuffle;
     document.getElementById('shuffleBtn').classList.toggle('active', isShuffle);
   }
 
-  // Repeat
   function toggleRepeat() {
     isRepeat = !isRepeat;
     document.getElementById('repeatBtn').classList.toggle('active', isRepeat);
@@ -921,44 +861,13 @@
     return `${m}:${sec}`;
   }
   
-  // Inisialisasi awal
-  document.addEventListener('DOMContentLoaded', () => {
-    checkTextOverflowAndScroll();
-  });
+  document.addEventListener('DOMContentLoaded', () => { checkTextOverflowAndScroll(); });
   
-  // MutationObserver untuk perubahan teks judul
   const observer = new MutationObserver(() => {
-    // Setelah teks berubah, reset scroll
-    setTimeout(() => {
-      checkTextOverflowAndScroll();
-    }, 30);
+    setTimeout(() => { checkTextOverflowAndScroll(); }, 30);
   });
   observer.observe(songNameEl, { childList: true, characterData: true, subtree: true });
   observer.observe(songArtistEl, { childList: true, characterData: true, subtree: true });
-  
-  const songName = document.getElementById('songName');
-  const titleContainer = document.getElementById('titleContainer');
-
-  function initScroll() {
-    const containerWidth = titleContainer.offsetWidth;
-    const textWidth = songName.scrollWidth;
-
-    if (textWidth > containerWidth) {
-      const dist = textWidth - containerWidth + 30;
-      songName.style.setProperty('--scroll-dist', `-${dist}px`);
-      
-      // Pakai timeout biar fadenya muncul pas animasinya beneran mulai jalan
-      setTimeout(() => {
-        titleContainer.classList.add('is-scrolling');
-      }, 2000); // Samakan dengan animation-delay di CSS
-
-      songName.classList.add('song-scrolling-anim');
-    }
-  }
-
-  window.onload = initScroll;
-  // Saat hover atau interaksi, tidak perlu hentikan scroll (biarkan berjalan natural)
-  // Tapi ketika teks diubah, reset.
 </script>
 </body>
 </html>
